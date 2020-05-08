@@ -5,6 +5,8 @@ Reddit bot
 import json
 import sys
 import datetime
+import random
+
 import praw
 import bot_secrets
 
@@ -16,14 +18,40 @@ reddit = praw.Reddit(
     password=bot_secrets.password,
 )
 
-msg = (
-    'A terrible place I\'ve heard. ' +
-    'There\'s a boat leaving from Khuul if you have any reason to go.'
-)
+msgs = [
+    (
+        'A terrible place I\'ve heard. '
+        'There\'s a boat leaving from Khuul if you have any reason to go.'
+    ),
+    (
+        'That\'s the frozen island up to the north, right? '
+        'Sounds awful to me. If you\'re looking to get there, '
+        'you might check for transportation in Khuul.'
+    ),
+    (
+        'You want to go to Solstheim? Look around the docks for '
+        'S\'virr. His boat can get you there.'
+    ),
+    (
+        'S\'virr can take you to Solstheim. At a fair price, too.'
+    ),
+    (
+        'It\'s an inhospitable place, to be sure. '
+        'Bears, wolves, and other creatures I\'d rather not imagine '
+        'abound. It\'s cold, windy, and generally unfriendly.'
+    )
+]
+
+
+def get_msg():
+    ''' pick a comment '''
+    return random.choice(msgs)
+
 
 now = datetime.datetime.now
 
-class State():
+
+class State:
     ''' persistant state '''
 
     def __init__(self, filename='state.json'):
@@ -51,6 +79,22 @@ class State():
         if key not in self.state:
             self.state[key] = value
 
+
+def transitive_reply_to_myself(comment):
+    ''' figure out if this is a reply related to another reply I've made
+
+    this will work even if the comment is at the top level, since the
+    parent is the submission itself
+    '''
+    if comment.author.name == 'SolstheimBot':
+        return True
+
+    if comment.parent().author.name == 'SolstheimBot':
+        return True
+
+    return False
+
+
 def main():
     ''' read comments, distribute snark
     '''
@@ -75,14 +119,14 @@ def main():
         if 'solstheim' not in comment.body.lower():
             continue
 
-        if comment.submission.id in state[seen]:
-            # don't comment on the same submission twice
+        if transitive_reply_to_myself(comment):
+            # don't comment on our own comments upstream
             print(now(), 'skipping', comment.permalink)
             state[stats]['skipped'] += 1
 
         else:
             print(now(), 'replying to', comment.permalink)
-            comment.reply(msg)
+            comment.reply(get_msg())
 
             state[seen].append(comment.submission.id)
             state[stats]['matched'] += 1
