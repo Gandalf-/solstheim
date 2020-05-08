@@ -80,25 +80,31 @@ class State:
             self.state[key] = value
 
 
-def transitive_reply_to_myself(comment):
+def is_comment(obj):
+    ''' sanity check '''
+    return isinstance(obj, praw.models.reddit.comment.Comment)
+
+
+def transitive_to_myself(comment, depth=0):
     ''' figure out if this is a reply related to another reply I've made
 
     this will work even if the comment is at the top level, since the
     parent is the submission itself
     '''
+    if depth > 10 or not is_comment(comment):
+        # likely a submission, meaning we hit the top of the tree
+        return False
+
     if comment.author.name == 'SolstheimBot':
         return True
 
-    if comment.parent().author.name == 'SolstheimBot':
-        return True
-
-    return False
+    return transitive_to_myself(comment.parent(), depth=depth + 1)
 
 
 def main():
     ''' read comments, distribute snark
     '''
-    morrowind = reddit.subreddit('Morrowind')
+    subreddits = reddit.subreddit('Morrowind+Skyrim')
 
     state = State()
     seen = 'submissions_seen'
@@ -108,7 +114,7 @@ def main():
     state.setdefault(stats, {'read': 0, 'matched': 0, 'skipped': 0})
     print('starting', state[stats])
 
-    for comment in morrowind.stream.comments(skip_existing=True):
+    for comment in subreddits.stream.comments(skip_existing=True):
 
         state[stats]['read'] += 1
 
@@ -119,7 +125,7 @@ def main():
         if 'solstheim' not in comment.body.lower():
             continue
 
-        if transitive_reply_to_myself(comment):
+        if transitive_to_myself(comment):
             # don't comment on our own comments upstream
             print(now(), 'skipping', comment.permalink)
             state[stats]['skipped'] += 1
