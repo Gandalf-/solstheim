@@ -29,10 +29,6 @@ msgs = [
         'you might check for transportation in Khuul.'
     ),
     (
-        'You want to go to Solstheim? Look around the docks for '
-        'S\'virr. His boat can get you there.'
-    ),
-    (
         'S\'virr can take you to Solstheim. At a fair price, too.'
     ),
     (
@@ -112,14 +108,14 @@ def main():
 
     state.setdefault(seen, [])
     state.setdefault(stats, {'read': 0, 'matched': 0, 'skipped': 0})
-    print('starting', state[stats])
+    print(now(), 'starting', state[stats])
 
     for comment in subreddits.stream.comments(skip_existing=True):
 
         state[stats]['read'] += 1
 
         if state[stats]['read'] % 100 == 0:
-            print(now(), state[stats])
+            print(now(), 'statdump', state[stats])
             state.save()
 
         if 'solstheim' not in comment.body.lower():
@@ -131,7 +127,7 @@ def main():
             state[stats]['skipped'] += 1
 
         else:
-            print(now(), 'replying to', comment.permalink)
+            print(now(), 'replying', comment.permalink)
             comment.reply(get_msg())
 
             state[seen].append(comment.submission.id)
