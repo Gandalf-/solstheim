@@ -28,14 +28,12 @@ msgs = [
         'Sounds awful to me. If you\'re looking to get there, '
         'you might check for transportation in Khuul.'
     ),
-    (
-        'S\'virr can take you to Solstheim. At a fair price, too.'
-    ),
+    ('S\'virr can take you to Solstheim. At a fair price, too.'),
     (
         'It\'s an inhospitable place, to be sure. '
         'Bears, wolves, and other creatures I\'d rather not imagine '
         'abound. It\'s cold, windy, and generally unfriendly.'
-    )
+    ),
 ]
 
 
@@ -103,10 +101,12 @@ def main():
     subreddits = reddit.subreddit('Morrowind+Skyrim')
 
     state = State()
-    seen = 'submissions_seen'
+    submissions = 'submissions_seen'
     stats = 'statistics'
+    authors = 'authors_seen'
 
-    state.setdefault(seen, [])
+    state.setdefault(submissions, [])
+    state.setdefault(authors, [])
     state.setdefault(stats, {'read': 0, 'matched': 0, 'skipped': 0})
     print(now(), 'starting', state[stats])
 
@@ -118,20 +118,40 @@ def main():
             print(now(), 'statdump', state[stats])
             state.save()
 
+        # skip 2/3 to keep it interesting, saves work too
+        if random.choice([True, True, False]):
+            continue
+
+        # keyword must be present
         if 'solstheim' not in comment.body.lower():
             continue
 
-        if transitive_to_myself(comment):
-            # don't comment on our own comments upstream
-            print(now(), 'skipping', comment.permalink)
+        # keyword in long comments is hard to see
+        if len(comment.body) > 400:
             state[stats]['skipped'] += 1
+            continue
 
-        else:
-            print(now(), 'replying', comment.permalink)
-            comment.reply(get_msg())
+        # don't annoy people
+        if comment.author.name in state[authors]:
+            state[stats]['skipped'] += 1
+            continue
 
-            state[seen].append(comment.submission.id)
-            state[stats]['matched'] += 1
+        # don't spam posts
+        if comment.submission.id in state[submissions]:
+            state[stats]['skipped'] += 1
+            continue
+
+        # don't key off myself
+        if transitive_to_myself(comment):
+            state[stats]['skipped'] += 1
+            continue
+
+        print(now(), 'replying', comment.permalink)
+        comment.reply(get_msg())
+
+        state[submissions].append(comment.submission.id)
+        state[authors].append(comment.author.name)
+        state[stats]['matched'] += 1
 
         state.save()
 
