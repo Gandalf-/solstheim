@@ -3,7 +3,9 @@ Reddit bot
 '''
 
 import json
+import os.path as path
 import sys
+import time
 import datetime
 import random
 
@@ -95,12 +97,12 @@ def transitive_to_myself(comment, depth=0):
     return transitive_to_myself(comment.parent(), depth=depth + 1)
 
 
-def main():
+def main(fname):
     ''' read comments, distribute snark
     '''
-    subreddits = reddit.subreddit('Morrowind+Skyrim')
+    subreddits = reddit.subreddit('Morrowind')
 
-    state = State()
+    state = State(fname)
     submissions = 'submissions_seen'
     stats = 'statistics'
     authors = 'authors_seen'
@@ -155,6 +157,8 @@ def main():
 
         state.save()
 
-
 if not sys.flags.interactive and __name__ == '__main__':
-    main()
+    # slow start up
+    time.sleep(5)
+    state_fpath = path.join(path.dirname(path.realpath(__file__)), 'state.json')
+    main(state_fpath)
