@@ -20,23 +20,18 @@ reddit = praw.Reddit(
     password=bot_secrets.password,
 )
 
-msgs = [
-    (
+msgs = (
+    6 * [
         'A terrible place I\'ve heard. '
         'There\'s a boat leaving from Khuul if you have any reason to go.'
-    ),
-    (
+    ] + 2 * [
+        'S\'virr can take you to Solstheim. At a fair price, too.'
+    ] + 1 * [
         'That\'s the frozen island up to the north, right? '
         'Sounds awful to me. If you\'re looking to get there, '
         'you might check for transportation in Khuul.'
-    ),
-    ('S\'virr can take you to Solstheim. At a fair price, too.'),
-    (
-        'It\'s an inhospitable place, to be sure. '
-        'Bears, wolves, and other creatures I\'d rather not imagine '
-        'abound. It\'s cold, windy, and generally unfriendly.'
-    ),
-]
+    ]
+)
 
 
 def get_msg():
@@ -120,8 +115,8 @@ def main(fname):
             print(now(), 'statdump', state[stats])
             state.save()
 
-        # skip 2/3 to keep it interesting, saves work too
-        if random.choice([True, True, False]):
+        # skip 1/2 to keep it interesting, saves work too
+        if random.choice([True, False]):
             continue
 
         # keyword must be present
@@ -157,8 +152,11 @@ def main(fname):
 
         state.save()
 
+
 if not sys.flags.interactive and __name__ == '__main__':
     # slow start up
     time.sleep(5)
-    state_fpath = path.join(path.dirname(path.realpath(__file__)), 'state.json')
+    state_fpath = path.join(
+        path.dirname(path.realpath(__file__)), 'state.json'
+    )
     main(state_fpath)
